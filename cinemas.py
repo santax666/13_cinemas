@@ -10,8 +10,9 @@ def create_parser():
     parser = argparse.ArgumentParser(usage='%(prog)s [аргументы]',
                                      description='Поиск популярных фильмов'
                                                  ' с помощью %(prog)s')
-    parser.add_argument('-c', action='store_true',
+    parser.add_argument('-r', action='store_true',
                         help='рейтинг по числу кинотеатров, где идет фильм')
+    parser.add_argument('-c', '--city', default='Москва', help="Ваш город")
     return parser
 
 
@@ -20,9 +21,9 @@ def send_get_request(url):
     return response
 
 
-def fetch_afisha_page():
+def fetch_afisha_page(domain):
     films_list = []
-    url = 'http://www.afisha.ru/msk/schedule_cinema/'
+    url = 'http:{0}schedule_cinema/'.format(domain)
     class_for_films = 'object s-votes-hover-area collapsed'
     class_for_name = 'usetags'
     class_for_cinema = 'b-td-item'
@@ -78,20 +79,36 @@ def find_popular_films(films, cinema_rating):
     return films[:popular_films_number]
 
 
-def output_movies_to_console(films, rating):
+def output_movies_to_console(films, rating, city):
     output_text = ('рейтингу кинопоиска', 'числу кинотеатров',)
-    print('Популярные фильмы по {0}:'.format(output_text[rating]))
+    print('Популярные фильмы по {0} в городе {1}:'
+          .format(output_text[rating], city))
     for film_num, film in enumerate(films, 1):
         print('{0}) "{1}", рейтинг Кинопоиска: {2}, число кинотеатров: {3}'
               .format(film_num, film[0], film[3], film[1]))
 
 
+def get_city_url(name):
+    city_classes = ['js-geographyplaceid dd-link ',
+                    'js-geographyplaceid dd-link bold']
+    afisha_url = 'http://www.afisha.ru/finderror/'
+    afisha_page = send_get_request(afisha_url).content
+    afisha_page = afisha_page.decode('utf-8').lower()
+    name = name.lower()
+    soup = BeautifulSoup(afisha_page, 'html.parser')
+    cities_bloсk = soup.find('span', {'class': city_classes},
+                             text=name)
+    return cities_bloсk['data-href']
+
+
 if __name__ == '__main__':
     parser = create_parser()
     namespace = parser.parse_args()
-    cinema_rating = namespace.c
+    cinema_rating = namespace.r
+    city = namespace.city
 
-    films_name_list = fetch_afisha_page()
+    url_domain = get_city_url(city)
+    films_name_list = fetch_afisha_page(url_domain)
     films_info = parse_afisha_list(films_name_list)
     films = find_popular_films(films_info, cinema_rating)
-    output_movies_to_console(films, cinema_rating)
+    output_movies_to_console(films, cinema_rating, city)
