@@ -1,6 +1,6 @@
 import requests
 import argparse
-import pyDes
+import pyDes as coding
 import hashlib
 import datetime
 
@@ -37,7 +37,7 @@ def get_afisha_session_value(request_value):
     SECRET = bytes([45, 56, 38, 71, 42, 105, 50, 77])
     INT_2_POW_64 = 18446744073709551616
     request_bytes = int(request_value).to_bytes(8, byteorder='little')
-    cipher = pyDes.des(SECRET, pyDes.ECB, pad=None, padmode=pyDes.PAD_NORMAL)
+    cipher = coding.des(SECRET, coding.ECB, pad=None, padmode=coding.PAD_NORMAL)
     byte_array = cipher.encrypt(request_bytes)
     session = int.from_bytes(byte_array, byteorder='little', signed=True)
     if session < 0:
