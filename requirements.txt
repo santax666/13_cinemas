@@ -2,6 +2,4 @@
 # pip install -r requirements.txt
 requests>=2.11.1
 argparse>=1.4.0
-pyDes>=2.0.1
-hashlib>=20081119
-datetime>=4.1.1
+beautifulsoup4>=4.5.1
