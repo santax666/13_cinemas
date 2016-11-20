@@ -23,44 +23,33 @@ def get_films_from_afisha_page():
     for film in films_html:
         film_name = film.find('h3', {'class': block['name']}).text
         cinema_count = len(film.find_all('td', {'class': block['cinemas']}))
-        film_kp_id = ''.join(get_kinopoisk_film_id(film_name))
-        votes, rating = get_kinopoisk_film_rating(film_kp_id)
-        films_list.append([film_name, cinema_count, votes, rating])
+        votes, rating = get_kinopoisk_film_rating(film_name)
+        films_list.append((rating, cinema_count, votes, film_name,))
     return films_list
 
 
-def get_kinopoisk_film_id(film_name):
+def get_kinopoisk_film_rating(film_name):
     search_url = 'https://www.kinopoisk.ru/search/handler-chromium-extensions'
     payload = {'query': film_name, 'go': 1}
-    film_data = requests.get(search_url, params=payload, allow_redirects=False)
-    film_url = film_data.headers.get ('Location')
-    yield '0' if film_url is None else film_url.split('/')[4]
+    film_data = requests.get(search_url, params=payload).content
+    soup = BeautifulSoup(film_data, 'html.parser')
+    rating = getattr(soup.find('span', {'class': 'rating_ball'}), 'text', 0)
+    votes = getattr(soup.find('span', {'class': 'ratingCount'}), 'text', 0)
+    return votes, float(rating)
 
 
-def get_kinopoisk_film_rating(film_id):
-    rating_kp_url = 'https://rating.kinopoisk.ru/{0}.xml'
-    if film_id == '0':
-        return 0, 0
-    rating_page = requests.get(rating_kp_url.format(film_id)).content
-    soup = BeautifulSoup(rating_page, 'xml')
-    return soup.kp_rating['num_vote'], float(soup.kp_rating.text)
-
-
-def find_popular_films(films, cinema_rating):
-    POPULAR_FILMS_NUMBER = 10
-    if cinema_rating:
-        films.sort(key=lambda x: x[1], reverse=True)
-    else:
-        films.sort(key=lambda x: x[3], reverse=True)
-    return films[:POPULAR_FILMS_NUMBER]
+def find_popular_films(films, rating):
+    popular_films_number = 10
+    popular_films = sorted(films, key=lambda x: x[rating], reverse=True)
+    return popular_films[:popular_films_number]
 
 
 def output_movies_to_console(films, rating):
     out = ('рейтингу кинопоиска', 'числу кинотеатров',)
     print('Популярные фильмы по {0} в городе Москва:'.format(out[rating]))
     for film_num, film in enumerate(films, 1):
-        print('{0}) "{1}", рейтинг: {2}, число кинотеатров: {3}'
-              .format(film_num, film[0], film[3], film[1]))
+        print('{0}) "{1}", рейтинг: {2}, голосов: {3}, число кинотеатров: {4}'
+              .format(film_num, film[3], film[0], film[2], film[1]))
 
 
 if __name__ == '__main__':
