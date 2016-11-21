@@ -1,4 +1,4 @@
 # requirements.txt
 # pip install -r requirements.txt
 requests>=2.11.1
-beautifulsoup4>=4.5.1
+bs4>=0.0.1
